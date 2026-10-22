@@ -37,6 +37,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
+import com.drawify.app.update.UpdateBanner
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -60,6 +61,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var filterButton: MaterialButton
     private lateinit var tiltButton: MaterialButton
     private lateinit var cornersButton: MaterialButton
+
+    private lateinit var updateBanner: UpdateBanner
 
     private val prefs by lazy { getSharedPreferences("drawify", MODE_PRIVATE) }
 
@@ -118,6 +121,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         applyInsets()
         setupControls()
+        updateBanner = UpdateBanner(this)
 
         if (!handleShareIntent(intent)) {
             lifecycleScope.launch {
@@ -141,9 +145,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         handleShareIntent(intent)
     }
 
+    override fun onStart() {
+        super.onStart()
+        // Runs on launch and every time the app comes back to the foreground.
+        updateBanner.check()
+    }
+
     override fun onResume() {
         super.onResume()
         if (tiltOn) registerSensor()
+        updateBanner.onResume()
     }
 
     override fun onPause() {

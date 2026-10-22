@@ -5,7 +5,11 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+// versionCode = GitHub Actions run number, so every CI build is newer than the last one.
+val buildNumber = (System.getenv("APP_BUILD_NUMBER") ?: System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+
+// Release signing comes from the environment (GitHub secrets in CI). The keystore is never committed.
+val keystorePath: String? = System.getenv("DRAWIFY_KEYSTORE_PATH")
 
 android {
     namespace = "com.drawify.app"
@@ -17,26 +21,38 @@ android {
         targetSdk = 35
         versionCode = buildNumber
         versionName = "1.0.$buildNumber"
+        buildConfigField("String", "UPDATE_REPO", "\"stefanruvceski/drawify\"")
     }
 
     signingConfigs {
-        create("release") {
-            // Fixed key committed to the repo so every CI build can update the previous install.
-            storeFile = rootProject.file("keystore/drawify.jks")
-            storePassword = "drawify"
-            keyAlias = "drawify"
-            keyPassword = "drawify"
+        if (keystorePath != null) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("DRAWIFY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("DRAWIFY_KEY_ALIAS") ?: "drawify"
+                keyPassword = System.getenv("DRAWIFY_KEY_PASSWORD") ?: System.getenv("DRAWIFY_KEYSTORE_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            // Without the secrets (PR builds) fall back to the debug key: installable for testing, never released.
+            signingConfig = if (keystorePath != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            buildConfigField("boolean", "UPDATE_CHECK_ENABLED", "true")
         }
         debug {
-            signingConfig = signingConfigs.getByName("release")
+            buildConfigField("boolean", "UPDATE_CHECK_ENABLED", "false")
         }
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {
@@ -67,4 +83,8 @@ dependencies {
     implementation("androidx.camera:camera-camera2:$cameraX")
     implementation("androidx.camera:camera-lifecycle:$cameraX")
     implementation("androidx.camera:camera-view:$cameraX")
+
+    testImplementation("junit:junit:4.13.2")
+    // Real org.json for JVM unit tests (the Android stub throws).
+    testImplementation("org.json:json:20240303")
 }
