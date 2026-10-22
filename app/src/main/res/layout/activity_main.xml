@@ -35,10 +35,15 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         android:background="@drawable/top_scrim"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:paddingHorizontal="16dp"
         android:paddingVertical="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -80,6 +85,9 @@
             style="@style/RoundIconButton"
             android:contentDescription="@string/lock"
             android:src="@drawable/ic_lock_open" />
+    </LinearLayout>
+
+        <include layout="@layout/update_banner" />
     </LinearLayout>
 
     <LinearLayout

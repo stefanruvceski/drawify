@@ -24,4 +24,16 @@
     <string name="corners_on">Drag the 4 corners onto the paper corners</string>
     <string name="tilt_angle">Tilt %1$d°</string>
     <string name="tilt_too_steep">Too steep (%1$d°)</string>
+
+    <!-- Update banner -->
+    <string name="update_title">New version · build %1$d</string>
+    <string name="update_install">Install</string>
+    <string name="update_dismiss">Dismiss</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_downloading_unknown">Downloading…</string>
+    <string name="update_failed">Download failed – check your connection and tap Install to retry</string>
+    <string name="update_installer_failed">Could not open the installer – tap Install to retry</string>
+    <string name="update_permission_title">Allow Drawify to install updates</string>
+    <string name="update_permission_body">Tap Settings, turn on “Allow from this source”, then come back – the installer opens by itself.</string>
+    <string name="update_settings">Settings</string>
 </resources>

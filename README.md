@@ -6,9 +6,11 @@ same time and can trace its lines.
 
 ## Install
 
-1. Open **Releases** in this repo and download the newest `drawify-*.apk`.
+1. Open **Releases** in this repo and download `drawify.apk` from the newest `android-b<N>` release.
 2. On the phone, allow installing from unknown sources and install the APK.
-3. Every new build installs over the previous one (same signing key).
+3. After that the app updates itself: when a newer build is published, a banner at the top says
+   “New version · build N” – tap **Install**, it downloads the APK and opens Android's installer.
+   The first time, Android asks to allow “Install unknown apps” for Drawify.
 
 ## Usage
 
@@ -29,7 +31,28 @@ same time and can trace its lines.
 Tip: keep the phone still (e.g. lean it on a glass or use a stand) – the image is fixed to the
 screen, not tracked on the paper.
 
-## Build
+## Build & releases
 
-GitHub Actions (`.github/workflows/build.yml`) builds the APK on every push and publishes it to
-Releases. Locally: `./gradlew assembleRelease` (needs the Android SDK and JDK 17).
+`.github/workflows/build.yml` runs the unit tests and builds the APK. On every push to `main` it
+publishes a **signed** release APK as a GitHub Release tagged `android-b<N>`, where
+N = `versionCode` = the workflow run number (always increasing). The release notes are the commit
+subject (or the `notes` input of a manual run); their first line is shown in the update banner.
+Pull requests only get a test build signed with a throwaway debug key (uploaded as an artifact).
+
+The app reads `https://api.github.com/repos/stefanruvceski/drawify/releases` without a token, so
+**the repo must be public**. Update checks are off in debug builds.
+
+### Signing (one-time)
+
+All releases must be signed with the same key, otherwise Android refuses to install an update over
+the installed app. The keystore is never committed. Create it and store it as GitHub secrets with:
+
+```sh
+./scripts/setup-signing.sh
+```
+
+This creates `~/.drawify-signing/` (keystore + password – back it up!) and sets the secrets
+`DRAWIFY_KEYSTORE_BASE64` and `DRAWIFY_KEYSTORE_PASSWORD`. Without them, pushes to `main` fail
+instead of publishing an unsigned or differently signed APK.
+
+Locally: `./gradlew assembleDebug` / `./gradlew testDebugUnitTest` (needs the Android SDK and JDK 17).

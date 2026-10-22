@@ -6,3 +6,8 @@ local.properties
 .DS_Store
 captures/
 .kotlin/
+
+# Signing keys never go in the repo
+*.jks
+*.keystore
+keystore.properties
