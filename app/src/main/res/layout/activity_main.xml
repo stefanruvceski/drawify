@@ -40,20 +40,40 @@
         android:paddingHorizontal="16dp"
         android:paddingVertical="12dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/app_name"
-            android:textColor="@android:color/white"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textColor="@android:color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tiltLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/visibilityButton"
             style="@style/RoundIconButton"
             android:contentDescription="@string/toggle_visibility"
             android:src="@drawable/ic_visibility" />
+
+        <ImageButton
+            android:id="@+id/flashButton"
+            style="@style/RoundIconButton"
+            android:contentDescription="@string/flash"
+            android:src="@drawable/ic_flash_off" />
 
         <ImageButton
             android:id="@+id/lockButton"
@@ -122,16 +142,23 @@
                 app:icon="@drawable/ic_brush" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/tiltButton"
+                style="@style/ToolButton"
+                android:text="@string/tilt"
+                app:icon="@drawable/ic_tilt" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cornersButton"
+                style="@style/ToolButton"
+                android:text="@string/corners"
+                app:icon="@drawable/ic_corners" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/flipButton"
                 style="@style/ToolButton"
                 android:text="@string/flip"
                 app:icon="@drawable/ic_flip" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/flashButton"
-                style="@style/ToolButton"
-                android:text="@string/flash"
-                app:icon="@drawable/ic_flash_off" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/resetButton"

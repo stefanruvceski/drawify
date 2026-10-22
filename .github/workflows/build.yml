@@ -40,5 +40,5 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: drawify-*.apk
           body: |
-            Preuzmi `drawify-1.0.${{ github.run_number }}.apk` ispod i instaliraj na telefon.
-            Build sa grane `${{ github.ref_name }}` (commit ${{ github.sha }}).
+            Download `drawify-1.0.${{ github.run_number }}.apk` below and install it on your phone.
+            Built from `${{ github.ref_name }}` (commit ${{ github.sha }}).

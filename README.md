@@ -1,29 +1,35 @@
 # Drawify
 
-Besplatna AR aplikacija za precrtavanje (Android). Izabereš sliku iz galerije, aplikacija je
-prikaže poluprovidno preko kamere, a ti na ekranu vidiš i papir i svoju ruku i precrtavaš linije.
+A free AR tracing app for Android. Pick an image from your gallery and Drawify shows it
+semi-transparently over the camera feed, so you see the paper, your hand and the image at the
+same time and can trace its lines.
 
-## Instalacija
+## Install
 
-1. Otvori **Releases** u ovom repou i preuzmi najnoviji `drawify-*.apk`.
-2. Na telefonu dozvoli instalaciju iz nepoznatih izvora i instaliraj APK.
-3. Svaki novi build se instalira preko starog (isti potpis).
+1. Open **Releases** in this repo and download the newest `drawify-*.apk`.
+2. On the phone, allow installing from unknown sources and install the APK.
+3. Every new build installs over the previous one (same signing key).
 
-## Korišćenje
+## Usage
 
-- **Slika** – izaberi sliku iz galerije (ili iz galerije uradi *Podeli → Drawify*).
-- Jednim prstom pomeraš sliku, sa dva prsta je zumiraš i rotiraš.
-- **Providnost** – klizač na dnu.
-- **Filter** – *Original*, *Bez belog* (belo postaje providno, ostaju samo linije) ili
-  *Konture* (izvlači ivice – dobro za fotografije).
-- **Ogledalo** – horizontalno okretanje slike.
-- **Svetlo** – baterijska lampa telefona.
-- **Centriraj** – vrati sliku na sredinu.
-- 🔒 – zaključa sliku da se ne pomeri dok crtaš; 👁 – privremeno sakrije sliku.
+- **Image** – pick an image from the gallery (or share one to Drawify from any app).
+- Drag with one finger, pinch to zoom and rotate with two.
+- **Opacity** – slider at the bottom.
+- **Filter** – *Original*, *No white* (white becomes transparent, only the lines stay) or
+  *Outline* (edge detection, good for photos).
+- **Tilt** – for when the phone can't be held straight above the paper (e.g. propped up at 45°).
+  Lay the paper flat on the table and aim the phone at it: the motion sensor measures the tilt and
+  the image is warped so it looks like it lies flat on the paper. The current angle is shown at
+  the top. Locking the image (🔒) freezes the correction while you draw.
+- **Corners** – manual perspective: drag the 4 corner dots onto the corners of your paper (or drag
+  inside the image to move it). Use this to fine-tune Tilt or when the paper isn't flat on a table.
+- **Mirror** – flip the image horizontally. **Reset** – center the image again.
+- Top bar: 👁 hide the image temporarily, ⚡ flashlight, 🔒 lock the image so it can't move.
 
-Savet: telefon drži mirno (npr. na čaši ili stalku iznad papira) – slika je fiksirana na ekranu.
+Tip: keep the phone still (e.g. lean it on a glass or use a stand) – the image is fixed to the
+screen, not tracked on the paper.
 
 ## Build
 
-APK pravi GitHub Actions (`.github/workflows/build.yml`) na svaki push i objavljuje ga u Releases.
-Lokalno: `./gradlew assembleRelease` (potreban Android SDK, JDK 17).
+GitHub Actions (`.github/workflows/build.yml`) builds the APK on every push and publishes it to
+Releases. Locally: `./gradlew assembleRelease` (needs the Android SDK and JDK 17).

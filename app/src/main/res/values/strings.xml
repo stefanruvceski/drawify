@@ -1,20 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Drawify</string>
-    <string name="empty_hint">Izaberi sliku iz galerije\n(dugme „Slika“ dole)</string>
-    <string name="no_camera_permission">Potrebna je dozvola za kameru.\nDodirni ovde da pokušaš ponovo.</string>
-    <string name="camera_error">Kamera nije mogla da se pokrene</string>
-    <string name="image_error">Slika nije mogla da se učita</string>
-    <string name="opacity">Providnost</string>
-    <string name="pick">Slika</string>
-    <string name="flip">Ogledalo</string>
-    <string name="flash">Svetlo</string>
-    <string name="reset">Centriraj</string>
+    <string name="empty_hint">Pick an image from your gallery\n(tap “Image” below)</string>
+    <string name="no_camera_permission">Camera permission is required.\nTap here to try again.</string>
+    <string name="camera_error">Could not start the camera</string>
+    <string name="image_error">Could not load the image</string>
+    <string name="opacity">Opacity</string>
+    <string name="pick">Image</string>
+    <string name="flip">Mirror</string>
+    <string name="flash">Flashlight</string>
+    <string name="reset">Reset</string>
+    <string name="tilt">Tilt</string>
+    <string name="corners">Corners</string>
     <string name="filter_original">Original</string>
-    <string name="filter_no_background">Bez belog</string>
-    <string name="filter_outline">Konture</string>
-    <string name="locked">Slika zaključana – pomeranje isključeno</string>
-    <string name="unlocked">Slika otključana – pomeraj, zumiraj i rotiraj sa dva prsta</string>
-    <string name="lock">Zaključaj</string>
-    <string name="toggle_visibility">Prikaži/sakrij sliku</string>
+    <string name="filter_no_background">No white</string>
+    <string name="filter_outline">Outline</string>
+    <string name="locked">Image locked – moving disabled</string>
+    <string name="unlocked">Image unlocked – drag, pinch to zoom and rotate</string>
+    <string name="lock">Lock</string>
+    <string name="toggle_visibility">Show/hide image</string>
+    <string name="tilt_on">Tilt correction on – lay the paper flat on the table and aim the phone at it</string>
+    <string name="tilt_unavailable">This phone has no motion sensor for tilt correction</string>
+    <string name="corners_on">Drag the 4 corners onto the paper corners</string>
+    <string name="tilt_angle">Tilt %1$d°</string>
+    <string name="tilt_too_steep">Too steep (%1$d°)</string>
 </resources>

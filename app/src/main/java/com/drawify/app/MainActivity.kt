@@ -3,7 +3,14 @@ package com.drawify.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.hardware.camera2.CameraCharacteristics
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -14,7 +21,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
@@ -32,18 +42,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.tan
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var previewView: PreviewView
     private lateinit var overlay: OverlayView
     private lateinit var hint: TextView
+    private lateinit var tiltLabel: TextView
     private lateinit var opacitySeek: SeekBar
     private lateinit var opacityValue: TextView
     private lateinit var lockButton: ImageButton
     private lateinit var visibilityButton: ImageButton
+    private lateinit var flashButton: ImageButton
     private lateinit var filterButton: MaterialButton
-    private lateinit var flashButton: MaterialButton
+    private lateinit var tiltButton: MaterialButton
+    private lateinit var cornersButton: MaterialButton
 
     private val prefs by lazy { getSharedPreferences("drawify", MODE_PRIVATE) }
 
@@ -54,6 +70,16 @@ class MainActivity : AppCompatActivity() {
     private var source: Bitmap? = null
     private var filter = ImageFilter.ORIGINAL
     private var filterJob: Job? = null
+
+    // Tilt correction
+    private lateinit var sensorManager: SensorManager
+    private var gravitySensor: Sensor? = null
+    private var tiltOn = false
+    private val gravity = FloatArray(3)
+    private var hasGravity = false
+    private var sensorFocalMm = 0f
+    private var sensorLongSideMm = 0f
+    private val tiltMatrix = Matrix()
 
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -76,12 +102,19 @@ class MainActivity : AppCompatActivity() {
         previewView = findViewById(R.id.previewView)
         overlay = findViewById(R.id.overlay)
         hint = findViewById(R.id.hint)
+        tiltLabel = findViewById(R.id.tiltLabel)
         opacitySeek = findViewById(R.id.opacitySeek)
         opacityValue = findViewById(R.id.opacityValue)
         lockButton = findViewById(R.id.lockButton)
         visibilityButton = findViewById(R.id.visibilityButton)
-        filterButton = findViewById(R.id.filterButton)
         flashButton = findViewById(R.id.flashButton)
+        filterButton = findViewById(R.id.filterButton)
+        tiltButton = findViewById(R.id.tiltButton)
+        cornersButton = findViewById(R.id.cornersButton)
+
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
+            ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         applyInsets()
         setupControls()
@@ -108,11 +141,21 @@ class MainActivity : AppCompatActivity() {
         handleShareIntent(intent)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (tiltOn) registerSensor()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(this)
+    }
+
     override fun onStop() {
         super.onStop()
         // The camera closes in the background, which switches the torch off.
         torchOn = false
-        flashButton.setIconResource(R.drawable.ic_flash_off)
+        flashButton.setImageResource(R.drawable.ic_flash_off)
     }
 
     private fun applyInsets() {
@@ -159,14 +202,21 @@ class MainActivity : AppCompatActivity() {
             applyFilter(fit = false)
         }
 
+        tiltButton.setOnClickListener { setTilt(!tiltOn) }
+        cornersButton.setOnClickListener { setCornerMode(!overlay.cornerMode) }
+
         findViewById<View>(R.id.flipButton).setOnClickListener { overlay.flipHorizontal() }
-        findViewById<View>(R.id.resetButton).setOnClickListener { overlay.resetPosition() }
+        findViewById<View>(R.id.resetButton).setOnClickListener {
+            setCornerMode(false)
+            if (tiltOn) updateTiltPerspective() else overlay.clearPerspective()
+            overlay.resetPosition()
+        }
 
         flashButton.setOnClickListener {
             val cam = camera ?: return@setOnClickListener
             torchOn = !torchOn
             cam.cameraControl.enableTorch(torchOn)
-            flashButton.setIconResource(if (torchOn) R.drawable.ic_flash_on else R.drawable.ic_flash_off)
+            flashButton.setImageResource(if (torchOn) R.drawable.ic_flash_on else R.drawable.ic_flash_off)
         }
 
         lockButton.setOnClickListener {
@@ -183,6 +233,97 @@ class MainActivity : AppCompatActivity() {
             val show = overlay.visibility != View.VISIBLE
             overlay.visibility = if (show) View.VISIBLE else View.INVISIBLE
             visibilityButton.setImageResource(if (show) R.drawable.ic_visibility else R.drawable.ic_visibility_off)
+        }
+    }
+
+    private fun setActive(button: MaterialButton, active: Boolean) {
+        val color = if (active) getColor(R.color.accent) else getColor(android.R.color.white)
+        button.iconTint = ColorStateList.valueOf(color)
+        button.setTextColor(color)
+    }
+
+    /** Turns automatic tilt correction (from the gravity sensor) on or off. */
+    private fun setTilt(on: Boolean) {
+        if (on && gravitySensor == null) {
+            Toast.makeText(this, R.string.tilt_unavailable, Toast.LENGTH_LONG).show()
+            return
+        }
+        tiltOn = on
+        setActive(tiltButton, on)
+        if (on) {
+            setCornerMode(false)
+            hasGravity = false
+            registerSensor()
+            Toast.makeText(this, R.string.tilt_on, Toast.LENGTH_LONG).show()
+        } else {
+            sensorManager.unregisterListener(this)
+            tiltLabel.visibility = View.GONE
+            overlay.clearPerspective()
+        }
+        // The old placement was made under a different perspective, so start fresh.
+        overlay.resetPosition()
+    }
+
+    /** Corner mode: drag the image corners by hand. Stops tilt tracking but keeps its current shape. */
+    private fun setCornerMode(on: Boolean) {
+        if (on && !overlay.hasImage) return
+        if (on && tiltOn) {
+            tiltOn = false
+            setActive(tiltButton, false)
+            sensorManager.unregisterListener(this)
+            tiltLabel.visibility = View.GONE
+        }
+        overlay.cornerMode = on
+        setActive(cornersButton, overlay.cornerMode)
+        if (overlay.cornerMode) {
+            overlay.locked = false
+            lockButton.setImageResource(R.drawable.ic_lock_open)
+            Toast.makeText(this, R.string.corners_on, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun registerSensor() {
+        gravitySensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+    }
+
+    override fun onSensorChanged(event: SensorEvent) {
+        // While locked the image must stay exactly where it is, even if the phone wobbles.
+        if (!tiltOn || overlay.locked) return
+        if (!hasGravity) {
+            event.values.copyInto(gravity, 0, 0, 3)
+            hasGravity = true
+        } else {
+            // Low-pass filter to smooth out hand shake.
+            for (i in 0 until 3) gravity[i] += SMOOTHING * (event.values[i] - gravity[i])
+        }
+        updateTiltPerspective()
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) = Unit
+
+    private fun updateTiltPerspective() {
+        if (!hasGravity) return
+        val w = overlay.width
+        val h = overlay.height
+        if (w == 0 || h == 0) return
+        val degrees = TiltPerspective.tiltDegrees(gravity).roundToInt()
+        tiltLabel.visibility = View.VISIBLE
+        if (TiltPerspective.compute(gravity, w, h, focalPx(w, h), tiltMatrix)) {
+            tiltLabel.text = getString(R.string.tilt_angle, degrees)
+            overlay.setPerspective(tiltMatrix)
+        } else {
+            tiltLabel.text = getString(R.string.tilt_too_steep, degrees)
+        }
+    }
+
+    /** Camera focal length in screen pixels, for a 4:3 preview filling the view (FILL_CENTER). */
+    private fun focalPx(viewW: Int, viewH: Int): Float {
+        val longView = max(viewH.toFloat(), viewW * 4f / 3f)
+        return if (sensorFocalMm > 0f && sensorLongSideMm > 0f) {
+            sensorFocalMm / sensorLongSideMm * longView
+        } else {
+            // Typical phone main camera: ~70° field of view across the long side.
+            longView / 2f / tan(Math.toRadians(35.0)).toFloat()
         }
     }
 
@@ -216,6 +357,8 @@ class MainActivity : AppCompatActivity() {
             if (bmp == null) {
                 Toast.makeText(this@MainActivity, R.string.image_error, Toast.LENGTH_LONG).show()
             } else {
+                setCornerMode(false)
+                if (!tiltOn) overlay.clearPerspective()
                 setSource(bmp)
             }
         }
@@ -261,12 +404,33 @@ class MainActivity : AppCompatActivity() {
                 provider.unbindAll()
                 val cam = provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview)
                 camera = cam
+                readLensInfo(cam)
                 torchOn = false
-                flashButton.setIconResource(R.drawable.ic_flash_off)
+                flashButton.setImageResource(R.drawable.ic_flash_off)
                 flashButton.isEnabled = cam.cameraInfo.hasFlashUnit()
+                flashButton.alpha = if (flashButton.isEnabled) 1f else 0.4f
             } catch (e: Exception) {
                 Toast.makeText(this, R.string.camera_error, Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    @OptIn(ExperimentalCamera2Interop::class)
+    private fun readLensInfo(cam: Camera) {
+        try {
+            val info = Camera2CameraInfo.from(cam.cameraInfo)
+            val focal = info.getCameraCharacteristic(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+            val size = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+            if (focal != null && focal.isNotEmpty() && size != null) {
+                sensorFocalMm = focal[0]
+                sensorLongSideMm = max(size.width, size.height)
+            }
+        } catch (e: Exception) {
+            // Fall back to a typical field of view in focalPx().
+        }
+    }
+
+    private companion object {
+        const val SMOOTHING = 0.08f
     }
 }
