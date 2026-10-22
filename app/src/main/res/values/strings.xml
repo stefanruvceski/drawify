@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Drawify</string>
+    <string name="empty_hint">Izaberi sliku iz galerije\n(dugme „Slika“ dole)</string>
+    <string name="no_camera_permission">Potrebna je dozvola za kameru.\nDodirni ovde da pokušaš ponovo.</string>
+    <string name="camera_error">Kamera nije mogla da se pokrene</string>
+    <string name="image_error">Slika nije mogla da se učita</string>
+    <string name="opacity">Providnost</string>
+    <string name="pick">Slika</string>
+    <string name="flip">Ogledalo</string>
+    <string name="flash">Svetlo</string>
+    <string name="reset">Centriraj</string>
+    <string name="filter_original">Original</string>
+    <string name="filter_no_background">Bez belog</string>
+    <string name="filter_outline">Konture</string>
+    <string name="locked">Slika zaključana – pomeranje isključeno</string>
+    <string name="unlocked">Slika otključana – pomeraj, zumiraj i rotiraj sa dva prsta</string>
+    <string name="lock">Zaključaj</string>
+    <string name="toggle_visibility">Prikaži/sakrij sliku</string>
+</resources>
